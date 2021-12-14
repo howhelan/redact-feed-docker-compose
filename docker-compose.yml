@@ -1,0 +1,55 @@
+version: "3.9"
+services:
+  redact-feed-api:
+    build:
+      context: ${FEED_API_PATH}
+      dockerfile: Dockerfile.local
+      args:
+        MONGODB_PORT: ${FEED_API_MONGODB_PORT}
+        MONGODB_HOST: ${FEED_API_MONGODB_HOST}
+        MONGODB_DB: ${FEED_API_MONGODB_DB}
+        DB_COLLECTION_NAME_FEED_POST: ${FEED_API_DB_COLLECTION_NAME_FEED_POST}
+        JWT_SECRET_KEY: ${FEED_API_JWT_SECRET_KEY}
+  redact-feed-ui:
+    build:
+      context: ${FEED_UI_PATH}
+      dockerfile: Dockerfile.local
+      args:
+        FEED_NGINX_PORT: 1010
+  feed-nginx:
+    build: .
+    ports:
+      - "1010:1010"
+    depends_on:
+      - "redact-feed-api"
+      - "redact-feed-ui"
+  redact-store:
+    build:
+      context: ${REDACT_STORE_PATH}
+      dockerfile: Dockerfile.local
+    env_file: ${REDACT_STORE_PATH}/local.env
+    environment:
+      - REDACT_TLS_SERVER_CERTIFICATE_SUBJECT_ALTERNATIVE_NAME="redact-store"
+      - REDACT_SERVER_PORT=${REDACT_STORE_PORT}
+    ports:
+      - "${REDACT_STORE_PORT}:${REDACT_STORE_PORT}"
+    volumes:
+      - ${REDACT_STORE_PATH}/config:/usr/src/redact-store/config
+      - ${REDACT_STORE_PATH}/tls/server/cert/ca.pem:/usr/src/redact-store/tls/server/cert/ca.pem
+      - ${REDACT_STORE_PATH}/tls/server/key/ca.pem:/usr/src/redact-store/tls/server/key/ca.pem
+  redact-client:
+    build:
+      context: ${REDACT_CLIENT_PATH}
+      dockerfile: Dockerfile.local
+    env_file: ${REDACT_CLIENT_PATH}/local.env
+    environment:
+      - REDACT_SERVER_PORT=${REDACT_CLIENT_PORT}
+      - REDACT_STORAGE_URL=https://redact-store:${REDACT_STORE_PORT}
+    ports:
+      - "${REDACT_CLIENT_PORT}:${REDACT_CLIENT_PORT}"
+    volumes:
+      - ${REDACT_CLIENT_PATH}/config:/usr/src/redact-client/config
+      - ${REDACT_CLIENT_PATH}/certs:/usr/src/redact-client/certs
+      - ${REDACT_CLIENT_PATH}/keys:/usr/src/redact-client//keys
+    depends_on:
+      - "redact-store"
