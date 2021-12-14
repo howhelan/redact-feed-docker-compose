@@ -61,8 +61,8 @@ The two server blocks listen on 1001 (TLS) and 1000 (non-TLS). This correlates
 to the upstream blocks in nginx.conf.
 
 ```
-ssl_certificate /home/ajp/projects/redact/redact-feed-api/tls/cert.pem;
-ssl_certificate_key /home/ajp/projects/redact/redact-feed-api/tls/key.pem;
+ssl_certificate /etc/nginx/tls-config/cert.pem;
+ssl_certificate_key /etc/nginx/tls-config/key.pem;
 ssl_protocols TLSv1.3;
 ssl_verify_client optional_no_ca;
 ```
